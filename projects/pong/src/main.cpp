@@ -1,11 +1,10 @@
-#include <cstdlib>
 #include <raylib.h>
 
 struct Ball
 {
     float radius = 8.0f;
     Vector2 position = {0, 0};
-    Vector2 speed = {500, 120};
+    Vector2 speed = {900, 450};
     Color color = WHITE;
 
     void Update()
@@ -18,20 +17,16 @@ struct Ball
         if (position.y + radius >= GetScreenHeight() ||
             position.y - radius <= 0)
             speed.y *= -1;
-
-        reset();
     }
 
     void reset()
     {
-        if (position.x - (2 * radius) > GetScreenWidth() ||
-            position.x + (2 * radius) < 0)
-        {
-            position = {(float)GetScreenWidth() / 2,
-                        (float)GetScreenHeight() / 2};
-
-            speed.x *= -1;
-        }
+        position = {(float)GetScreenWidth() / 2, (float)GetScreenHeight() / 2};
+        speed.x *= -1;
+        if (speed.x > 0)
+            speed = {900, 450};
+        else
+            speed = {-900, 450};
     }
 
     void Draw() { DrawCircleV(position, radius, color); }
@@ -41,7 +36,7 @@ struct Paddle
 {
     Vector2 position = {0, 0};
     Vector2 size = {8, 100};
-    float speed = 600;
+    float speed = 1000;
     Color color = WHITE;
 
     Rectangle GetRect() const
@@ -73,7 +68,7 @@ int GetPlayerInput()
 float GetNPCInput(const Ball& ball, const Paddle& npc)
 {
     float paddleCenterY = npc.position.y + (npc.size.y / 2.0f);
-    float threshold = 30.0f;
+    float threshold = 40.0f;
 
     if (ball.position.y < paddleCenterY - threshold)
         return -1.0f;
@@ -105,6 +100,9 @@ int main()
     paddel_right.position = {GetScreenWidth() - 50.0f,
                              (float)GetScreenHeight() / 2};
 
+    int player_score = 0;
+    int npc_score = 0;
+
     while (!WindowShouldClose())
     {
         float p_direction = GetPlayerInput();
@@ -114,13 +112,24 @@ int main()
         paddel_left.Update(p_direction);
         paddel_right.Update(npc_direction);
 
+        if (ball.position.x < 0)
+        {
+            npc_score++;
+            ball.reset();
+        }
+        if (ball.position.x > GetScreenWidth())
+        {
+            player_score++;
+            ball.reset();
+        }
+
         if (CheckCollisionCircleRec(
                 ball.position, ball.radius, paddel_left.GetRect()))
         {
             ball.speed.x *= -1;
-            if (abs((int)paddel_left.speed) > 0)
+            if (p_direction != 0)
             {
-                ball.speed.y += 20;
+                ball.speed.y += 50 * p_direction;
             }
             ball.position.x =
                 paddel_left.position.x + paddel_left.size.x + ball.radius;
@@ -129,9 +138,9 @@ int main()
                 ball.position, ball.radius, paddel_right.GetRect()))
         {
             ball.speed.x *= -1;
-            if (abs((int)paddel_right.speed) > 0)
+            if (npc_direction != 0)
             {
-                ball.speed.y += 20;
+                ball.speed.y += 50 * npc_direction;
             }
             ball.position.x = paddel_right.position.x - ball.radius;
         }
@@ -142,6 +151,21 @@ int main()
         ball.Draw();
         paddel_left.Draw();
         paddel_right.Draw();
+
+        DrawText(TextFormat("%i", player_score), 200, 80, 180.0f, WHITE);
+        DrawText(TextFormat("%i", npc_score),
+                 GetScreenWidth() - 200,
+                 80,
+                 180.0f,
+                 WHITE);
+
+        for (int i = 0; i < GetScreenHeight(); i += 60)
+        {
+            DrawLineEx({(float)GetScreenWidth() / 2, (float)i},
+                       {(float)GetScreenWidth() / 2, (float)(i + 40)},
+                       8.0f,
+                       WHITE);
+        }
 
         EndDrawing();
     }
