@@ -1,10 +1,10 @@
+#include <cstdlib>
 #include <raylib.h>
 
 struct Ball
 {
     float radius = 8.0f;
-    Vector2 position = {(float)GetScreenWidth() / 2,
-                        (float)GetScreenHeight() / 2};
+    Vector2 position = {0, 0};
     Vector2 speed = {500, 120};
     Color color = WHITE;
 
@@ -39,8 +39,7 @@ struct Ball
 
 struct Paddle
 {
-    Vector2 position = {(float)GetScreenWidth() / 2,
-                        (float)GetScreenHeight() / 2};
+    Vector2 position = {0, 0};
     Vector2 size = {8, 100};
     float speed = 600;
     Color color = WHITE;
@@ -83,15 +82,6 @@ float GetNPCInput(const Ball& ball, const Paddle& npc)
     return 0.0f;
 }
 
-struct Wall
-{
-    Vector2 position;
-    Vector2 size;
-    Color color;
-
-    void Draw() const { DrawRectangleV(position, size, color); }
-};
-
 int main()
 {
     const int w_width = 1280;
@@ -114,18 +104,36 @@ int main()
     Paddle paddel_right;
     paddel_right.position = {GetScreenWidth() - 50.0f,
                              (float)GetScreenHeight() / 2};
+
     while (!WindowShouldClose())
     {
+        float p_direction = GetPlayerInput();
+        float npc_direction = GetNPCInput(ball, paddel_right);
+
         ball.Update();
-        paddel_left.Update(GetPlayerInput());
-        paddel_right.Update(GetNPCInput(ball, paddel_right));
+        paddel_left.Update(p_direction);
+        paddel_right.Update(npc_direction);
 
         if (CheckCollisionCircleRec(
-                ball.position, ball.radius, paddel_left.GetRect()) ||
-            CheckCollisionCircleRec(
+                ball.position, ball.radius, paddel_left.GetRect()))
+        {
+            ball.speed.x *= -1;
+            if (abs((int)paddel_left.speed) > 0)
+            {
+                ball.speed.y += 20;
+            }
+            ball.position.x =
+                paddel_left.position.x + paddel_left.size.x + ball.radius;
+        }
+        if (CheckCollisionCircleRec(
                 ball.position, ball.radius, paddel_right.GetRect()))
         {
             ball.speed.x *= -1;
+            if (abs((int)paddel_right.speed) > 0)
+            {
+                ball.speed.y += 20;
+            }
+            ball.position.x = paddel_right.position.x - ball.radius;
         }
 
         BeginDrawing();
