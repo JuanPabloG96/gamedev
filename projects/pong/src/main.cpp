@@ -5,7 +5,7 @@ struct Ball
     float radius = 8.0f;
     Vector2 position = {(float)GetScreenWidth() / 2,
                         (float)GetScreenHeight() / 2};
-    Vector2 speed = {500, 500};
+    Vector2 speed = {500, 120};
     Color color = WHITE;
 
     void Update()
@@ -41,7 +41,7 @@ struct Paddle
 {
     Vector2 position = {(float)GetScreenWidth() / 2,
                         (float)GetScreenHeight() / 2};
-    Vector2 size = {8, 60};
+    Vector2 size = {8, 100};
     float speed = 600;
     Color color = WHITE;
 
@@ -61,6 +61,27 @@ struct Paddle
 
     void Draw() const { DrawRectangleV(position, size, color); }
 };
+
+int GetPlayerInput()
+{
+    if (IsKeyDown(KEY_W))
+        return -1;
+    else if (IsKeyDown(KEY_S))
+        return 1;
+    return 0;
+}
+
+float GetNPCInput(const Ball& ball, const Paddle& npc)
+{
+    float paddleCenterY = npc.position.y + (npc.size.y / 2.0f);
+    float threshold = 30.0f;
+
+    if (ball.position.y < paddleCenterY - threshold)
+        return -1.0f;
+    else if (ball.position.y > paddleCenterY + threshold)
+        return 1.0f;
+    return 0.0f;
+}
 
 struct Wall
 {
@@ -93,20 +114,19 @@ int main()
     Paddle paddel_right;
     paddel_right.position = {GetScreenWidth() - 50.0f,
                              (float)GetScreenHeight() / 2};
-
-    float direction = 0;
-
     while (!WindowShouldClose())
     {
-        if (IsKeyDown(KEY_W))
-            direction = -1;
-        else if (IsKeyDown(KEY_S))
-            direction = 1;
-        else
-            direction = 0;
-
         ball.Update();
-        paddel_left.Update(direction);
+        paddel_left.Update(GetPlayerInput());
+        paddel_right.Update(GetNPCInput(ball, paddel_right));
+
+        if (CheckCollisionCircleRec(
+                ball.position, ball.radius, paddel_left.GetRect()) ||
+            CheckCollisionCircleRec(
+                ball.position, ball.radius, paddel_right.GetRect()))
+        {
+            ball.speed.x *= -1;
+        }
 
         BeginDrawing();
 
