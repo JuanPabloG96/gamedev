@@ -1,5 +1,13 @@
 #include <raylib.h>
 
+enum class GameState
+{
+    MENU,
+    PVE,
+    PVP,
+    GAMEOVER
+};
+
 struct Ball
 {
     float radius = 8.0f;
@@ -9,11 +17,9 @@ struct Ball
 
     void Update()
     {
-        // Movement
         position.x += speed.x * GetFrameTime();
         position.y += speed.y * GetFrameTime();
 
-        // Screen vertical limits collision
         if (position.y + radius >= GetScreenHeight() ||
             position.y - radius <= 0)
             speed.y *= -1;
@@ -38,6 +44,7 @@ struct Paddle
     Vector2 size = {8, 100};
     float speed = 1000;
     Color color = WHITE;
+    unsigned int score = 0;
 
     Rectangle GetRect() const
     {
@@ -77,6 +84,18 @@ float GetNPCInput(const Ball& ball, const Paddle& npc)
     return 0.0f;
 }
 
+void CheckGameOver(const Paddle& p1, const Paddle& p2)
+{
+    if (p1.score >= 5 || p2.score >= 5)
+    {
+        DrawText("Game Over",
+                 GetScreenWidth() / 2 - (MeasureText("Game Over", 120) / 2),
+                 GetScreenHeight() / 2,
+                 120,
+                 WHITE);
+    }
+}
+
 int main()
 {
     const int w_width = 1280;
@@ -100,9 +119,6 @@ int main()
     paddel_right.position = {GetScreenWidth() - 50.0f,
                              (float)GetScreenHeight() / 2};
 
-    int player_score = 0;
-    int npc_score = 0;
-
     while (!WindowShouldClose())
     {
         float p_direction = GetPlayerInput();
@@ -114,12 +130,12 @@ int main()
 
         if (ball.position.x < 0)
         {
-            npc_score++;
+            paddel_right.score++;
             ball.reset();
         }
         if (ball.position.x > GetScreenWidth())
         {
-            player_score++;
+            paddel_left.score++;
             ball.reset();
         }
 
@@ -152,12 +168,13 @@ int main()
         paddel_left.Draw();
         paddel_right.Draw();
 
-        DrawText(TextFormat("%i", player_score), 200, 80, 180.0f, WHITE);
-        DrawText(TextFormat("%i", npc_score),
+        DrawText(TextFormat("%i", paddel_left.score), 200, 80, 180.0f, WHITE);
+        DrawText(TextFormat("%i", paddel_right.score),
                  GetScreenWidth() - 200,
                  80,
                  180.0f,
                  WHITE);
+        CheckGameOver(paddel_left, paddel_right);
 
         for (int i = 0; i < GetScreenHeight(); i += 60)
         {
